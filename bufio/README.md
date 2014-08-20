@@ -156,92 +156,111 @@ ReadBytes读取输入的字节，直到第一次遇到delim，返回包含数据
 ###func (*Reader) ReadLine
 ```golang
   func (b *Reader) ReadLine() (line []byte, isPrefix bool, err error)
-    ReadLine is a low-level line-reading primitive. Most callers should use ReadBytes('\n') or ReadString('\n') instead or use a Scanner.
-    	ReadLine是一个低级的行读取方式。更多的会使用ReadBytes('\n')或者 ReadString('\n') 替代 或者用Scanner
-    ReadLine tries to return a single line, not including the end-of-line bytes. If the line was too long for the buffer then isPrefix is set and the beginning of the line is returned.
-    	ReadLine试图返回单行，不包含结束字节。如果缓冲区的行太长，isPrefix 设置返回行的开始。
-	 The rest of the line will be returned from future calls. isPrefix will be false when returning the last fragment of the line. The returned buffer is only valid until the next call to ReadLine.
-	 	其余的行将会在调用的时候返回。isPrefix 在返回完所有的行后，会变成false。返回的缓冲区在下次调用ReadLine之前是有效的。
-	 ReadLine either returns a non-nil line or it returns an error, never both.
-    	ReadLine 要嘛返回非空的行要嘛返回错误，不会两个都同时返回
-    The text returned from ReadLine does not include the line end ("\r\n" or "\n"). No indication or error is given if the input ends without a final line end.
-    	ReadLine 返回的文本不包含行结束的 ("\r\n" or "\n")。在最后一行结束之前是不会有任何迹象和错误的
 ```
+ReadLine is a low-level line-reading primitive. Most callers should use ReadBytes('\n') or ReadString('\n') instead or use a Scanner.<br>
 
+ReadLine tries to return a single line, not including the end-of-line bytes. If the line was too long for the buffer then isPrefix is set and the beginning of the line is returned.<br>
+
+The rest of the line will be returned from future calls. isPrefix will be false when returning the last fragment of the line. The returned buffer is only valid until the next call to ReadLine.ReadLine either returns a non-nil line or it returns an error, never both.<br>
+
+The text returned from ReadLine does not include the line end ("\r\n" or "\n"). No indication or error is given if the input ends without a final line end. Calling UnreadByte after ReadLine will always unread the last byte read (possibly a character belonging to the line end) even if that byte is not part of the line returned by ReadLine.<br>
+
+ReadLine是一个低级的行读取原语。大部分的调用者应该使用ReadBytes('\n')或者 ReadString('\n') 替代 或者用Scanner.<br>
+ReadLine试图返回单行，不包含结束符字节。如果行对缓冲区来说太长，isPrefix 设置并返回该行的开始处。<br>
+其余的行将会在以后的调用返回。isPrefix 在返回完所有的行后，会变成false。返回的缓冲区在下次调用ReadLine之前是有效的。<br>
+ReadLine 要嘛返回非空的行要嘛返回错误，不会两个都同时返回.<br>
+ReadLine 返回的文本不包含结束符 ("\r\n" or "\n")。如果输入结束但最后一行没有结束符是不会有任何迹象和错误的. 在ReadLine之后调用UnreadByte  未读的最后一个字节读(可能是一个属于行结束符) 即使该字节不属于ReadLine返回的行。<br>
+
+注:原语是指由若干条指令组成的，用于完成一定功能的一个过程。<br>
+<br><br>
+
+###func (*Reader) ReadRune
 ```golang
-  func (b *Reader) ReadRune() (r rune, size int, err error)
-    ReadRune reads  single UTF-8 encoded Unicode character and returns the rune and its size in bytes.
-    If the encoded rune is invalid, it consumes one byte and returns unicode.ReplacementChar (U+FFFD) with a size of 1.
-    ReadRune 读取单个utf8 格式的字符返回rune和rune的size。
-     如果rune编码无效，它会消耗一个字节 返回unicode.ReplacementChar(U+FFFD)的1个大小
+func (b *Reader) ReadRune() (r rune, size int, err error)
 ```
+ReadRune reads  single UTF-8 encoded Unicode character and returns the rune and its size in bytes.<br>
+If the encoded rune is invalid, it consumes one byte and returns unicode.ReplacementChar (U+FFFD) with a size of 1.<br>
+ReadRune 读取单个utf8 编码的字符并返回rune和rune 以字节为单位的size.<br>
+如果rune编码无效，它会消耗一个字节并 返回大小为1的unicode.ReplacementChar(U+FFFD).<br>
+<br><br>
 
+###func (*Reader) ReadSlice
 ```golang
   func (b *Reader) ReadSlice(delim byte) (line []byte, err error)
-    ReadSlice reads until the first occurrence of delim in the input, returning a slice pointing at the bytes in the buffer.
-    The bytes stop being valid at the next read call. If ReadSlice encounters an error before finding a delimiter, it returns all the data in the buffer and the error itself (often io.EOF).
-    ReadSlice fails with error ErrBufferFull if the buffer fills without a delim.
-    Because the data returned from ReadSlice will be overwritten by the next I/O operation, most clients should use ReadBytes or ReadString instead.
-    ReadSlice returns err != nil if and only if line does not end in delim.
-     读取直到遇到分隔符delim，返回一个指向字节的缓冲区切片。
-     下一次调用后失效。如果ReadSlice在遇到分隔符之前发生错误，将会返回缓冲区里的所有数据和错误，如果缓冲区满了，但是还没遇到分隔符就会有 ErrBufferFull的错误。
-     因为ReadSlice 返回的数据会覆盖下一个IO操作，所以大部分的客户端用 ReadBytes 或 ReadString 替代。
-    ReadSlice 只会在行没有分隔符结束的情况下返回err != nil
 ```
+ReadSlice reads until the first occurrence of delim in the input, returning a slice pointing at the bytes in the buffer. The bytes stop being valid at the next read call. If ReadSlice encounters an error before finding a delimiter, it returns all the data in the buffer and the error itself (often io.EOF). ReadSlice fails with error ErrBufferFull if the buffer fills without a delim. Because the data returned from ReadSlice will be overwritten by the next I/O operation, most clients should use ReadBytes or ReadString instead. ReadSlice returns err != nil if and only if line does not end in delim.<br>
+ReadSlice 读取输入直到第一次遇到分隔符delim，返回一个指向缓冲区字节的slice. 在下一次调用读取之前该字节都是有效的. 如果ReadSlice在遇到分隔符之前发生错误，将会返回缓冲区里的所有数据和错误(通常是io.EOF). 如果缓冲区满了，但是还没遇到分隔符就会有 ErrBufferFull的错误. 因为ReadSlice 返回的数据将会在下一个IO操作时被覆盖，所以大部分的客户端应该用 ReadBytes 或 ReadString 替代. ReadSlice 只会在行没有分隔符结束的情况下返回err != nil .<br>
+<br><br>
 
+###func (b *Reader) ReadString
 ```golang
   func (b *Reader) ReadString(delim byte) (line string, err error)
-    ReadString reads until the first occurrence of delim in the input, returning a string containing the data up to and including the delimiter.
-    If ReadString encounters an error before finding a delimiter, it returns the data read before the error and the error itself (often io.EOF).
-    ReadString returns err != nil if and only if the returned data does not end in delim. For simple uses, a Scanner may be more convenient.
-    ReadString读取直接遇到第一个分隔符。返回包含分隔符的字符串。
-     如果ReadString在没有发现分隔符就遇到错误，返回发生错误之前读取的数据和错误。
-    ReadString 只会在行没有分隔符结束的情况下返回err != nil。对于简单的运用，Scanner 更方便
 ```
+ReadString reads until the first occurrence of delim in the input, returning a string containing the data up to and including the delimiter. If ReadString encounters an error before finding a delimiter, it returns the data read before the error and the error itself (often io.EOF). ReadString returns err != nil if and only if the returned data does not end in delim. For simple uses, a Scanner may be more convenient.<br>
+ReadString读取输入直接遇到第一个分隔符。返回包含分隔符的字符串. 如果ReadString在没有发现分隔符就遇到错误，返回到发生错误之前读取的数据和错误. ReadString 只会在行没有分隔符结束的情况下返回err != nil。对于简单的运用，Scanner适合.<br>
+<br><br>
 
+###func (*Reader) Reset
 ```golang
-  func (b *Reader) UnreadByte() error
-    UnreadByte unreads the last byte. Only the most recently read byte can be unread.
-     撤销最后一次读书的字节。只有最后读的字节可以被撤销
+func (b *Reader) Reset(r io.Reader)
 ```
+Reset discards any buffered data, resets all state, and switches the buffered reader to read from r.<br>
+Reset 丢弃任何缓冲区数据,重置所有状态, 切换缓冲区reader 从r读取.<br>
+<br><br>
 
+###func (b *Reader) UnreadByte
+```golang
+func (b *Reader) UnreadByte() error
+```
+UnreadByte unreads the last byte. Only the most recently read byte can be unread.<br>
+UnreadByte 撤消最后一次读出的字节.有最后读出的字节可以被撤消.<br>
+<br><br>
+
+###func (b *Reader) UnreadRune
 ```golang
   func (b *Reader) UnreadRune() error
-    UnreadRune unreads the last rune. If the most recent read operation on the buffer was not a ReadRune, UnreadRune returns an error.
-     撤销最后一次读出的rune.如果最后一次操作不是ReadRune，返回错误。
-    (In this regard it is stricter than UnreadByte, which will unread the last byte from any read operation.)
-    （在这方面，它比UnreadByte严格）
 ```
+UnreadRune unreads the last rune. If the most recent read operation on the buffer was not a ReadRune, UnreadRune returns an error. (In this regard it is stricter than UnreadByte, which will unread the last byte from any read operation.).<br>
+撤销最后一次读出的rune.如果最后一次操作不是ReadRune，返回错误。（在这方面，它比UnreadByte严格）.<br>
+<br><br>
 
+###func (*Reader) WriteTo
 ```golang
-  func (b *Reader) WriteTo(w io.Writer) (n int64, err error)
-    WriteTo implements io.WriterTo.
-     实现io.WriterTo
+func (b *Reader) WriteTo(w io.Writer) (n int64, err error)
 ```
+WriteTo implements io.WriterTo.<br>
+实现io.WriterTo.<br>
+<br><br>
 
+###type Scanner
 ```golang
-type Scanner
   type Scanner struct {
         // contains filtered or unexported fields
   }
+```
   Scanner provides a convenient interface for reading data such as a file of newline-delimited lines of text.
-  	Scanner提供一个更方便的接口读取数据，像文件的新行分隔文本的行。
+  	Scanner提供一个更方便的接口读取数据，如例如读取一个多行文本.
+
   Successive calls to the Scan method will step through the 'tokens' of a file, skipping the bytes between the tokens.
-  	继承Scan方法的使用tokens对文件单步调试调用，跳出标记之间的字节。
+  连续调用Scan方法将单步调试文件的'tokens',跳过tokens之间的字节.
+
   The specification of a token is defined by a split function of type SplitFunc; the default split function breaks the input into lines with line termination stripped.
-  	token是一个SplitFunc类型的分割函数，默认的分割函数将输入的行中断。
+  	token的规范由SplitFunc类型的分割函数定义; 默认的分割函数
+
   Split functions are defined in this package for scanning a file into lines, bytes, UTF-8-encoded runes, and space-delimited words. The client may instead provide a custom split function.
-  	分割函数在这个包的是一个文件的行，字节，UTF8字节和间隔符。客户端可以自定义函数来替代分割函数。
+  	分割函数在这个包是一个文件的行，字节，UTF8字节和间隔符。客户端可以自定义函数来替代分割函数。
+
   Scanning stops unrecoverably at EOF, the first I/O error, or a token too large to fit in the buffer. When a scan stops, the reader may have advanced arbitrarily far past the last token.
   	搜索在遇到结束符、第一个I/O错误、或者token大于缓冲区的大小。当一个搜索结束，读取者也许会离最后一个token任意远。
+
   Programs that need more control over error handling or large tokens, or must run sequential scans on a reader, should use bufio.Reader instead.
   	程序在必须更多的控制错误处理或太大的tokens，或者连续的搜索，应该用 bufio.Reader代替
-```
 
+<br><br>
 
-Example (Custom)
-Use a Scanner with a custom split function (built by wrapping ScanWords) to validate 32-bit decimal input.
-Code:
+###Example (Custom)
+Use a Scanner with a custom split function (built by wrapping ScanWords) to validate 32-bit decimal input.<br>
+Code:<br>
 ```golang
 // An artificial input source.
 const input = "1234 5678 1234567901234567890"
@@ -265,7 +284,9 @@ if err := scanner.Err(); err != nil {
     fmt.Printf("Invalid input: %s", err)
 }
 ```
+<br>
 Output:
+<br>
 ```golang
 1234
 5678
@@ -287,11 +308,10 @@ if err := scanner.Err(); err != nil {
     fmt.Fprintln(os.Stderr, "reading standard input:", err)
 }
 ```
+<br><br>
 
-
-
-Use a Scanner to implement a simple word-count utility by scanning the input as a sequence of space-delimited tokens.
-Code:
+Use a Scanner to implement a simple word-count utility by scanning the input as a sequence of space-delimited tokens.<br>
+Code:<br>
 ```golang
 // An artificial input source.
 const input = "Now is the winter of our discontent,\nMade glorious summer by this sun of York.\n"
@@ -308,84 +328,114 @@ if err := scanner.Err(); err != nil {
 }
 fmt.Printf("%d\n", count)
 ```
+<br>
 Output:
+<br>
 ```golang
 15
 ```
+<br><br>
 
-
+###func NewScanner
 ```golang
   func NewScanner(r io.Reader) *Scanner
-    NewScanner returns a new Scanner to read from r. The split function defaults to ScanLines
-    NewScanner 从r返回一个新的*Scanner。分割函数默认是ScanLines
 ```
+NewScanner returns a new Scanner to read from r. The split function defaults to ScanLines<br>
+NewScanner 从r返回一个新的Scanner。分割函数默认是ScanLines<br>
+<br><br>
 
+###func (*Scanner) Bytes
 ```golang
   func (s *Scanner) Bytes() []byte
-    Bytes returns the most recent token generated by a call to Scan. The underlying array may point to data that will be overwritten by a subsequent call to Scan. It does no allocation.
-    Bytes 将最后一次扫描出的切片返回。调用Scan 会覆盖 底层数组指向的数据。
 ```
+Bytes returns the most recent token generated by a call to Scan. The underlying array may point to data that will be overwritten by a subsequent call to Scan. It does no allocation.<br>
+Bytes 将最后一次调用Scan扫描出的切片返回。调用Scan 会覆盖 底层数组指向的数据。<br>
+<br><br>
 
+###func (s *Scanner) Err
 ```golang
   func (s *Scanner) Err() error
-    Err returns the first non-EOF error that was encountered by the Scanner.
-    Err 在Scanner遇到第一个非EOF错误返回
 ```
+Err returns the first non-EOF error that was encountered by the Scanner.<br>
+Err 返回Scanner遇到第一个非EOF错误.<br>
+<br><br>
 
+###func (s *Scanner) Scan
 ```golang
   func (s *Scanner) Scan() bool
-    Scan advances the Scanner to the next token, which will then be available through the Bytes or Text method.
-    It returns false when the scan stops, either by reaching the end of the input or an error.
-    After Scan returns false, the Err method will return any error that occurred during scanning, except that if it was io.EOF, Err will return nil.
-    Scan 搜索下一个标记， 然后通过Bytes或者Text方法取出。
-    当然搜索停止、搜索到末尾、或遇到错误时返回false。
-    当Scan 返回false。Err 方法将会返回在搜索期间遇到的任何错误，除了io.EOF会返回nil。
 ```
+Scan advances the Scanner to the next token, which will then be available through the Bytes or Text method. It returns false when the scan stops, either by reaching the end of the input or an error. After Scan returns false, the Err method will return any error that occurred during scanning, except that if it was io.EOF, Err will return nil. <br>
+Scan Scanner下一个token， 然后通过Bytes或者Text方法取出。当然搜索停止、搜索到末尾、或遇到错误时返回false。当Scan 返回false。Err 方法将会返回在搜索期间遇到的任何错误，除了io.EOF会返回nil。<br>
+<br><br>
 
+###func (*Scanner) Split
 ```golang
   func (s *Scanner) Split(split SplitFunc)
-    Split sets the split function for the Scanner. If called, it must be called before Scan. The default split function is ScanLines.
-    Split 设置搜索的分割函数，如果有调用，必须在Scan之前调用，默认的分割函数是ScanLines
 ```
+Split sets the split function for the Scanner. If called, it must be called before Scan. The default split function is ScanLines.<br>
+Split 设置Scanner的分割函数，如果有调用，必须在Scan之前调用，默认的分割函数是ScanLines.<br>
+<br><br>
 
+###func (*Scanner) Text
 ```golang
   func (s *Scanner) Text() string
-    Text returns the most recent token generated by a call to Scan as a newly allocated string holding its bytes.
-    Text 返回在调用Scan重新分配字符串的时候,最后一次扫描的字符串
 ```
+Text returns the most recent token generated by a call to Scan as a newly allocated string holding its bytes.<br>
+Text 返回在调用Scan重新分配字符串的时候,最后一次扫描的字符串.<br>
+<br><br>
 
+###type SplitFunc
 ```golang
-type SplitFunc
   type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)
-    SplitFunc is the signature of the split function used to tokenize the input.
-    The arguments are an initial substring of the remaining unprocessed data and a flag, atEOF, that reports whether the Reader has no more data to give.
-    The return values are the number of bytes to advance the input and the next token to return to the user, plus an error, if any.
-    If the data does not yet hold a complete token, for instance if it has no newline while scanning lines,
-    SplitFunc can return (0, nil) to signal the Scanner to read more data into the slice and try again with a longer slice starting at the same point in the input.
-
-    SplitFunc是分割函数用于标记输入。参数是Reader有没有更多的数据时的一个未处理的字串和一个atEOF标示
-     返回值是读取到下一个标示的字节数，如果有错误的话加上一个错误。
-     如果数据没有一个完整的标示，例如扫描行的时候没有新行，
-    SplitFunc return (0, nil)的标示，Scanner 在输入的时候尝试用一个更长的切片的同一个指针开始 ， 从切片中读取更多的数据
-
-    If the returned error is non-nil, scanning stops and the error is returned to the client.
-     如果返回的错误不是nil，扫描终止，错误返回给客户端。
-    The function is never called with an empty data slice unless atEOF is true. If atEOF is true, however, data may be non-empty and, as always, holds unprocessed text.
-     除非atEOF 参数的值是true，否则函数不会调用一个空数据的切片。如果atEOF 是true，data参数有可能是非空的，通常是未处理的数据
 ```
+SplitFunc is the signature of the split function used to tokenize the input. The arguments are an initial substring of the remaining unprocessed data and a flag, atEOF, that reports whether the Reader has no more data to give. The return values are the number of bytes to advance the input and the next token to return to the user, plus an error, if any. If the data does not yet hold a complete token, for instance if it has no newline while scanning lines, SplitFunc can return (0, nil) to signal the Scanner to read more data into the slice and try again with a longer slice starting at the same point in the input.<br>
+
+If the returned error is non-nil, scanning stops and the error is returned to the client.<br>
+
+The function is never called with an empty data slice unless atEOF is true. If atEOF is true, however, data may be non-empty and, as always, holds unprocessed text.<br>
+
+SplitFunc是分割函数用于标记输入。参数初始化未处理剩余的子字符串数据 和一个flag, atEOF, 报告Reader是否已经没有数据. 返回值是读取到下一个标示的字节数，如果有错误的话加上一个错误。 如果数据没有一个完整的标示，例如扫描行的时候没有换行符，SplitFunc 返回 (0, nil) 来通知Scanner  读取更多数据到slice 并 在一次以一个更大的slice尝试.<br>
+
+如果返回的错误不是nil，扫描终止，错误返回给客户端。<br>
+
+除非atEOF 参数的值是true，否则函数不会以一个空数据的切片调用。如果atEOF 是true，data参数有可能是非空的，通常是未处理的数据.<br>
 
 
+###type Writer
 ```golang
-type Writer
-  Writer implements buffering for an io.Writer object. If an error occurs writing to a Writer, no more data will be accepted and all subsequent writes will return the error.
-  Writer实现 io.Writer 缓冲区对象。如果遇到错误，就不会再写入数据，并且后面的写入都会返回错误。
+type Writer struct {
+        // contains filtered or unexported fields
+}
+```
+Writer implements buffering for an io.Writer object. If an error occurs writing to a Writer, no more data will be accepted and all subsequent writes will return the error.<br>
+Writer实现 io.Writer 缓冲区对象。如果遇到错误，就不会再接收数据并所有子请求都返回错误。<br>
+<br>
+▹ Example<br>
+```golang
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
+func main() {
+	w := bufio.NewWriter(os.Stdout)
+	fmt.Fprint(w, "Hello, ")
+	fmt.Fprint(w, "world!")
+	w.Flush() // Don't forget to flush!
+}
 ```
 
+
+###func NewWriter
 ```golang
-  func NewWriter(wr io.Writer) *Writer
-    NewWriter returns a new Writer whose buffer has the default size.
-    NewWriter 返回一个有默认大小的缓冲区Writer
+func NewWriter(wr io.Writer) *Writer
 ```
+NewWriter returns a new Writer whose buffer has the default size.<br>
+NewWriter 返回一个有默认大小的缓冲区Writer.<br>
+<br><br>
 
 ```golang
   func NewWriterSize(wr io.Writer, size int) *Writer
